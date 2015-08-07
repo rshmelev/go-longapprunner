@@ -18,15 +18,16 @@ import (
 
 // packets got from stdout/err of external process
 type StreamData struct {
-	stderr bool
+	Stderr bool
 	// if data is nil then certain pipe is closed
-	data string
+	Data string
 }
 
 type LongRun struct {
 	// main
 	Args        []string
 	LogsChannel chan *StreamData
+	WorkingDir  string
 
 	// config
 	StopChannel          chan struct{}
@@ -69,7 +70,11 @@ func (r *LongRun) Start() {
 
 	//	fmt.Println("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", r.Args)
 	r.Cmd = exec.Command(r.Args[0], r.Args[1:]...)
-	r.Cmd.Dir = filepath.Dir(r.Args[0])
+	if r.WorkingDir != "" {
+		r.Cmd.Dir = r.WorkingDir
+	} else {
+		r.Cmd.Dir = filepath.Dir(r.Args[0])
+	}
 	//	r.Cmd.Stdin = &XReader{}
 	//	if isWindows := runtime.GOOS == "windows"; !isWindows {
 	//		r.Cmd = exec.Command("sh", "-c", strings.Join(r.Args, " "))

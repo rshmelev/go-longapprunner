@@ -28,10 +28,10 @@ func LogsChan_toStringChan(ch chan *StreamData, stdooutPrefix string, stderrPref
 	res := make(chan string, 1)
 	go func() {
 		for x := range ch {
-			if x.stderr {
-				res <- stderrPrefix + x.data
+			if x.Stderr {
+				res <- stderrPrefix + x.Data
 			} else {
-				res <- stdooutPrefix + x.data
+				res <- stdooutPrefix + x.Data
 			}
 		}
 		close(res)

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"runtime"
 	"strings"
+	"strconv"
 )
 
 // i guess it is not needed here...
@@ -34,7 +35,7 @@ func GetHttpContents(url string) {
 	ioutil.ReadAll(r.Body)
 }
 
-func StringToArgs(s string) []string {
+func StringToArgs_old(s string) []string {
 	res := []string{}
 
 	for len(s) > 0 {
@@ -68,6 +69,91 @@ func StringToArgs(s string) []string {
 		} else {
 			break
 		}
+	}
+
+	return res
+}
+
+func StringToArgs(s string) []string {
+	res := []string{}
+
+	wordStart := -1
+	accum := ""
+	quochar := ' '
+	specialrangestart := -1
+	slashed := false
+	i:= 0
+	for ; i < len(s); i++ {
+		// is it the start of the word?
+		if wordStart < 0 && s[i] != ' ' {
+			wordStart = i
+			specialrangestart = i
+		}
+
+		if wordStart >= 0 {
+			// end of word?
+			if s[i] == ' ' && quochar == ' ' {
+				// there were some quochars so we're not taking range but taking accum
+				if specialrangestart > -1 && specialrangestart <= i {
+					accum = accum + s[specialrangestart:i]
+				}
+				res = append(res, accum)
+				specialrangestart = -1
+				wordStart = -1
+				accum = ""
+			} else {
+				if s[i] == '`' || s[i] == '"' || s[i] == '\'' {
+					// is beginning of quoted range?
+					if quochar == ' ' && !slashed {
+						quochar = rune(s[i])
+						accum += s[specialrangestart:i]
+						specialrangestart = i+1
+					} else {
+						// is end of quoted range?
+						if quochar == rune(s[i]) && !slashed {
+							if specialrangestart <= i {
+								accum += strings.Replace(s[specialrangestart:i], "\\"+string(quochar), ""+string(quochar), -1)
+							}
+							quochar = ' '
+							specialrangestart = i+1
+						}
+					}
+				}
+				if s[i] == '\\' {
+					if slashed { // -1 symbol
+
+					} else {
+
+					}
+					slashed = !slashed
+				} else {
+					if slashed { // -1 symbol!
+
+					}
+					slashed = false
+				}
+ 			}
+		}
+
+	}
+
+	// probably some last word
+	if wordStart >= 0 {
+		// there were some quochars so we're not taking range but taking accum
+		if specialrangestart > -1 && specialrangestart <= i {
+			accum = accum + s[specialrangestart:i]
+		}
+		res = append(res, accum)
+	}
+
+	for i= 0; i < len(res);i++ {
+		uq := `"`+strings.Replace(res[i], `"`, `\"`,-1)+`"`
+//		println("unquoting: ["+res[i]+"] "+uq)
+		if r ,e := strconv.Unquote(uq); e == nil {
+//			println("unquoted: "+r)
+			res[i] = r
+		}
+
 	}
 
 	return res
